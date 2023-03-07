@@ -1,13 +1,27 @@
-use std::net::TcpListener;
+use std::{
+    io::{prelude::*, BufReader},
+    net::{TcpListener, TcpStream},
+};
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
 
     for stream in listener.incoming() {
-        // A single stream represents an open connection between the client and the server.
         let stream = stream.unwrap();
-        println!("Connection established!");
-        // When stream goes out of scope and is dropped at the end of the loop, the connection
-        // is closed as part of the drop implementation.
+        handle_connection(stream);
     }
+}
+
+fn handle_connection(mut stream: TcpStream) {
+    // BufReader implements the std::io::BufRead trait, which provides the lines method.
+    // The lines method returns an iterator of Result<String, std::io::Error> by splitting
+    // the stream of data whenever it sees a newline byte.
+    let buf_reader = BufReader::new(&mut stream);
+    let http_request: Vec<_> = buf_reader
+        .lines()
+        .map(|result| result.unwrap())
+        .take_while(|line| !line.is_empty())
+        .collect();
+
+    println!("Request: {:#?}", http_request);
 }
